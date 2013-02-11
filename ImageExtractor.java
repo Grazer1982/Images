@@ -1,5 +1,5 @@
-
 import java.io.IOException;
+import java.net.URL;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -16,6 +16,13 @@ public class ImageExtractor {
 
     // TODO: Add junit test case for this. (Construct Document from string, extract, check)
     public static String extractImageUrl(String url) throws IOException {
+        String contentType = new URL(url).openConnection().getContentType();
+        if (contentType != null) {
+            if (contentType.startsWith("image/")) {
+                return url;
+            }
+        }
+
         Document document = Jsoup.connect(url).get();
 
         String imageUrl = null;
@@ -35,6 +42,11 @@ public class ImageExtractor {
             return imageUrl;
         }
 
+        imageUrl = getImageFromTwitterShared(document);
+        if (imageUrl != null) {
+            return imageUrl;
+        }
+
         imageUrl = getImageFromLinkRel(document);
         if (imageUrl != null) {
             return imageUrl;
@@ -46,6 +58,18 @@ public class ImageExtractor {
         }
 
         return imageUrl;
+    }
+
+    private static String getImageFromTwitterShared(Document document) {
+        Element div = document.select("div.media-gallery-image-wrapper").first();
+        if (div == null) {
+            return null;
+        }
+        Element img = div.select("img.media-slideshow-image").first();
+        if (img != null) {
+            return img.absUrl("src");
+        }
+        return null;
     }
 
     private static String getImageFromGuess(Document document) {
